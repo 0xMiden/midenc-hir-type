@@ -1,0 +1,34 @@
+[package]
+name = "midenc-hir-type"
+description = "Type system and utilities for Miden HIR"
+version = "0.4.3"
+rust-version = "1.88"
+authors = ["Miden contributors"]
+repository = "https://github.com/0xMiden/midenc-hir-type"
+homepage = "https://github.com/0xMiden/midenc-hir-type"
+documentation = "https://github.com/0xMiden/compiler"
+categories = ["compilers"]
+keywords = ["compiler", "miden"]
+license = "MIT"
+readme = "README.md"
+edition = "2021"
+
+[features]
+default = ["serde"]
+serde = ["dep:serde", "dep:serde_repr", "smallvec/serde"]
+
+[dependencies]
+miden-formatting = { version = "0.1", default-features = false }
+smallvec = { version = "1.14", default-features = false, features = [
+    "union",
+    "const_generics",
+    "const_new",
+    "drain_filter",
+] }
+serde = { version = "1.0", default-features = false, optional = true, features = [
+    "serde_derive",
+    "alloc",
+    "rc",
+] }
+serde_repr = { version = "0.1", optional = true }
+thiserror = { version = "2.0", default-features = false }

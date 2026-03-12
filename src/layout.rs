@@ -178,11 +178,13 @@ impl Type {
                     let original_size = struct_ty.size;
                     let mut fields = VecDeque::from_iter(struct_ty.fields.iter().cloned());
                     let mut split = StructType {
+                        name: None,
                         repr: original_repr,
                         size: 0,
                         fields: smallvec![],
                     };
                     let mut remaining = StructType {
+                        name: None,
                         repr: TypeRepr::packed(1),
                         size: 0,
                         fields: smallvec![],
@@ -202,6 +204,7 @@ impl Type {
                             // Handle the edge case where padding is at the front of the struct
                             if split.fields.is_empty() {
                                 split.fields.push(StructField {
+                                    name: None,
                                     index: 0,
                                     align: 1,
                                     offset: 0,
@@ -239,6 +242,7 @@ impl Type {
                             // Handle the edge case where padding is at the front of the struct
                             if split.fields.is_empty() {
                                 split.fields.push(StructField {
+                                    name: None,
                                     index: 0,
                                     align: 1,
                                     offset: 0,
@@ -332,6 +336,7 @@ impl Type {
                             // The second half of the split will always be a type
                             let partial2 = partial2.unwrap();
                             split.fields.push(StructField {
+                                name: None,
                                 index,
                                 offset,
                                 align,
@@ -344,6 +349,7 @@ impl Type {
                             remaining.size = original_size - split.size;
                             remaining.fields.reserve(1 + fields.len());
                             remaining.fields.push(StructField {
+                                name: None,
                                 index: 0,
                                 offset: 1,
                                 align: 1,
@@ -534,6 +540,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(0),
             &StructField {
+                name: None,
                 index: 0,
                 align: 4,
                 offset: 0,
@@ -543,6 +550,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(1),
             &StructField {
+                name: None,
                 index: 1,
                 align: 1,
                 offset: 4,
@@ -552,6 +560,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(2),
             &StructField {
+                name: None,
                 index: 2,
                 align: 4,
                 offset: 8,
@@ -567,6 +576,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(0),
             &StructField {
+                name: None,
                 index: 0,
                 align: 1,
                 offset: 0,
@@ -576,6 +586,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(1),
             &StructField {
+                name: None,
                 index: 1,
                 align: 1,
                 offset: 4,
@@ -585,6 +596,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(2),
             &StructField {
+                name: None,
                 index: 2,
                 align: 1,
                 offset: 5,
@@ -600,6 +612,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(0),
             &StructField {
+                name: None,
                 index: 0,
                 align: 4,
                 offset: 0,
@@ -609,6 +622,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(1),
             &StructField {
+                name: None,
                 index: 1,
                 align: 1,
                 offset: 4,
@@ -618,6 +632,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(2),
             &StructField {
+                name: None,
                 index: 2,
                 align: 4,
                 offset: 8,

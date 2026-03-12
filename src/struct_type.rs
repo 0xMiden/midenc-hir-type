@@ -1,5 +1,6 @@
 use core::{fmt, num::NonZeroU16};
 
+use alloc::sync::Arc;
 use smallvec::SmallVec;
 
 use super::{Alignable, Type};
@@ -8,6 +9,8 @@ use super::{Alignable, Type};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StructType {
+    /// An optional display name for this struct type
+    pub(crate) name: Option<Arc<str>>,
     /// The representation to use for this type
     pub(crate) repr: TypeRepr,
     /// The computed size of this struct
@@ -24,6 +27,8 @@ pub struct StructType {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StructField {
+    /// An optional display name for this field
+    pub name: Option<Arc<str>>,
     /// The index of this field in the final layout
     pub index: u8,
     /// The specified alignment for this field
@@ -118,24 +123,75 @@ impl TypeRepr {
     }
 }
 
+/// A wrapper around [Type] which permits a [Type] to be optionally named.
+pub struct NameAndType {
+    pub name: Option<Arc<str>>,
+    pub ty: Type,
+}
+
+impl From<Type> for NameAndType {
+    fn from(ty: Type) -> Self {
+        Self { name: None, ty }
+    }
+}
+
+impl From<(Arc<str>, Type)> for NameAndType {
+    fn from((name, ty): (Arc<str>, Type)) -> Self {
+        Self {
+            name: Some(name),
+            ty,
+        }
+    }
+}
+
 impl StructType {
     /// Create a new struct with default representation, i.e. a struct with representation of
     /// `TypeRepr::Packed(1)`.
     #[inline]
-    pub fn new<I: IntoIterator<Item = Type>>(fields: I) -> Self {
-        Self::new_with_repr(TypeRepr::Default, fields)
+    pub fn new<I>(fields: I) -> Self
+    where
+        I: IntoIterator,
+        <I as IntoIterator>::Item: Into<NameAndType>,
+    {
+        Self::from_parts(None, TypeRepr::Default, fields)
+    }
+
+    /// Create a new struct with default representation, i.e. a struct with representation of
+    /// `TypeRepr::Packed(1)`.
+    #[inline]
+    pub fn named<I>(name: Arc<str>, fields: I) -> Self
+    where
+        I: IntoIterator,
+        <I as IntoIterator>::Item: Into<NameAndType>,
+    {
+        Self::from_parts(Some(name), TypeRepr::Default, fields)
     }
 
     /// Create a new struct with the given representation.
     ///
     /// This function will panic if the rules of the given representation are violated.
-    pub fn new_with_repr<I: IntoIterator<Item = Type>>(repr: TypeRepr, fields: I) -> Self {
-        let tys = fields.into_iter().collect::<SmallVec<[_; 2]>>();
+    pub fn new_with_repr<I>(repr: TypeRepr, fields: I) -> Self
+    where
+        I: IntoIterator,
+        <I as IntoIterator>::Item: Into<NameAndType>,
+    {
+        Self::from_parts(None, repr, fields)
+    }
+
+    /// Create a new struct from the given name, repr, and fields.
+    ///
+    /// This function will panic if the rules of the given representation are violated.
+    pub fn from_parts<I>(name: Option<Arc<str>>, repr: TypeRepr, fields: I) -> Self
+    where
+        I: IntoIterator,
+        <I as IntoIterator>::Item: Into<NameAndType>,
+    {
+        let tys = fields.into_iter().map(|item| item.into()).collect::<SmallVec<[_; 2]>>();
         let mut fields = SmallVec::<[_; 2]>::with_capacity(tys.len());
         let size = match repr {
             TypeRepr::Transparent => {
                 let mut offset = 0u32;
-                for (index, ty) in tys.into_iter().enumerate() {
+                for (index, NameAndType { name, ty }) in tys.into_iter().enumerate() {
                     let index: u8 =
                         index.try_into().expect("invalid struct: expected no more than 255 fields");
                     let field_size: u32 = ty
@@ -144,6 +200,7 @@ impl StructType {
                         .expect("invalid type: size is larger than 2^32 bytes");
                     if field_size == 0 {
                         fields.push(StructField {
+                            name,
                             index,
                             align: 1,
                             offset,
@@ -160,6 +217,7 @@ impl StructType {
                              only valid for structs with a single non-zero sized field"
                         );
                         fields.push(StructField {
+                            name,
                             index,
                             align,
                             offset,
@@ -173,7 +231,7 @@ impl StructType {
             repr => {
                 let mut offset = 0u32;
                 let default_align: u16 =
-                    tys.iter().map(|t| t.min_alignment()).max().unwrap_or(1).try_into().expect(
+                    tys.iter().map(|t| t.ty.min_alignment()).max().unwrap_or(1).try_into().expect(
                         "invalid struct field alignment: expected power of two between 1 and 2^16",
                     );
                 let align = match repr {
@@ -184,7 +242,7 @@ impl StructType {
                     }
                 };
 
-                for (index, ty) in tys.into_iter().enumerate() {
+                for (index, NameAndType { name, ty }) in tys.into_iter().enumerate() {
                     let index: u8 =
                         index.try_into().expect("invalid struct: expected no more than 255 fields");
                     let field_size: u32 = ty
@@ -200,6 +258,7 @@ impl StructType {
                     };
                     offset += offset.align_offset(align as u32);
                     fields.push(StructField {
+                        name,
                         index,
                         align,
                         offset,
@@ -211,7 +270,18 @@ impl StructType {
             }
         };
 
-        Self { repr, size, fields }
+        Self {
+            name,
+            repr,
+            size,
+            fields,
+        }
+    }
+
+    /// Get the name of this struct, if provided.
+    #[inline]
+    pub fn name(&self) -> Option<Arc<str>> {
+        self.name.clone()
     }
 
     /// Get the [TypeRepr] for this struct
@@ -276,9 +346,13 @@ impl miden_formatting::prettier::PrettyPrint for StructType {
     fn render(&self) -> miden_formatting::prettier::Document {
         use miden_formatting::prettier::*;
 
+        let name = match self.name.clone() {
+            None => Document::Empty,
+            Some(name) => display(name) + const_text(" "),
+        };
         let header = match self.repr.render() {
-            Document::Empty => const_text("struct "),
-            repr => const_text("struct ") + const_text("#[repr(") + repr + const_text(")] "),
+            Document::Empty => const_text("struct ") + name,
+            repr => const_text("struct ") + name + const_text("#[repr(") + repr + const_text(")] "),
         };
 
         let singleline = self.fields.iter().enumerate().fold(Document::Empty, |acc, (i, field)| {
@@ -312,7 +386,13 @@ impl fmt::Display for StructField {
 
 impl miden_formatting::prettier::PrettyPrint for StructField {
     fn render(&self) -> miden_formatting::prettier::Document {
-        self.ty.render()
+        use miden_formatting::prettier::*;
+
+        if let Some(name) = self.name.clone() {
+            display(name) + const_text(" : ") + self.ty.render()
+        } else {
+            self.ty.render()
+        }
     }
 }
 

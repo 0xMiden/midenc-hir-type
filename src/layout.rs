@@ -1,7 +1,7 @@
 use alloc::{alloc::Layout, collections::VecDeque};
 use core::cmp::{self, Ordering};
 
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::*;
 
@@ -73,7 +73,8 @@ impl Type {
             | Self::Ptr(_)
             | Self::I16
             | Self::U16
-            | Self::Function(_)) => {
+            | Self::Function(_)
+            | Self::Enum(_)) => {
                 let len = ty.size_in_bytes();
                 let remaining = len - n;
                 match (n, remaining) {
@@ -419,6 +420,8 @@ impl Type {
             Self::I8 | Self::U8 | Self::I1 => 1,
             // Structs use the minimum alignment of their first field, or 1 if a zero-sized type
             Self::Struct(struct_ty) => struct_ty.min_alignment(),
+            // Enums use the minimum alignment of their largest variant, or 1 if a zero-sized type
+            Self::Enum(enum_ty) => enum_ty.min_alignment(),
             // Arrays use the minimum alignment of their element type
             Self::Array(array_ty) => array_ty.min_alignment(),
             // Lists use the minimum alignment of their element type
@@ -449,6 +452,7 @@ impl Type {
             Self::Ptr(_) | Self::Function(_) => 32,
             // Packed structs have no alignment padding between fields
             Self::Struct(struct_ty) => struct_ty.size as usize * 8,
+            Self::Enum(enum_ty) => enum_ty.size_in_bits(),
             Self::Array(array_ty) => array_ty.size_in_bits(),
             Type::List(_) => todo!(
                 "invalid type: list has no defined representation yet, so its size cannot be \

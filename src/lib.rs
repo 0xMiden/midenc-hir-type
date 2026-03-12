@@ -88,8 +88,8 @@ impl Type {
         match self {
             Self::Unknown => false,
             Self::Never => true,
-            Self::Array(ref ty) => ty.is_zst(),
-            Self::Struct(ref struct_ty) => struct_ty.fields.iter().all(|f| f.ty.is_zst()),
+            Self::Array(ty) => ty.is_zst(),
+            Self::Struct(struct_ty) => struct_ty.fields.iter().all(|f| f.ty.is_zst()),
             Self::I1
             | Self::I8
             | Self::U8

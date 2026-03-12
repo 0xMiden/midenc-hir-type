@@ -418,11 +418,11 @@ impl Type {
             // 8-bit integers and booleans can be naturally aligned
             Self::I8 | Self::U8 | Self::I1 => 1,
             // Structs use the minimum alignment of their first field, or 1 if a zero-sized type
-            Self::Struct(ref struct_ty) => struct_ty.min_alignment(),
+            Self::Struct(struct_ty) => struct_ty.min_alignment(),
             // Arrays use the minimum alignment of their element type
-            Self::Array(ref array_ty) => array_ty.min_alignment(),
+            Self::Array(array_ty) => array_ty.min_alignment(),
             // Lists use the minimum alignment of their element type
-            Self::List(ref element_ty) => element_ty.min_alignment(),
+            Self::List(element_ty) => element_ty.min_alignment(),
         }
     }
 
@@ -448,8 +448,8 @@ impl Type {
             // Raw pointers  are 32-bits, the same size as the native integer width, u32
             Self::Ptr(_) | Self::Function(_) => 32,
             // Packed structs have no alignment padding between fields
-            Self::Struct(ref struct_ty) => struct_ty.size as usize * 8,
-            Self::Array(ref array_ty) => array_ty.size_in_bits(),
+            Self::Struct(struct_ty) => struct_ty.size as usize * 8,
+            Self::Array(array_ty) => array_ty.size_in_bits(),
             Type::List(_) => todo!(
                 "invalid type: list has no defined representation yet, so its size cannot be \
                  determined"

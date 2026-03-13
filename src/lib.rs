@@ -5,6 +5,7 @@ extern crate alloc;
 
 mod alignable;
 mod array_type;
+mod enum_type;
 mod function_type;
 mod layout;
 mod pointer_type;
@@ -16,7 +17,8 @@ use core::fmt;
 use miden_formatting::prettier::PrettyPrint;
 
 pub use self::{
-    alignable::Alignable, array_type::ArrayType, function_type::*, pointer_type::*, struct_type::*,
+    alignable::Alignable, array_type::ArrayType, enum_type::*, function_type::*, pointer_type::*,
+    struct_type::*,
 };
 
 /// Represents the type of a value in the HIR type system
@@ -66,6 +68,8 @@ pub enum Type {
     Ptr(Arc<PointerType>),
     /// A compound type of fixed shape and size
     Struct(Arc<StructType>),
+    /// A tagged type enumeration with a fixed number of variants
+    Enum(Arc<EnumType>),
     /// A vector of fixed size
     Array(Arc<ArrayType>),
     /// A dynamically sized list of values of the given type
@@ -88,8 +92,9 @@ impl Type {
         match self {
             Self::Unknown => false,
             Self::Never => true,
-            Self::Array(ref ty) => ty.is_zst(),
-            Self::Struct(ref struct_ty) => struct_ty.fields.iter().all(|f| f.ty.is_zst()),
+            Self::Array(ty) => ty.is_zst(),
+            Self::Struct(struct_ty) => struct_ty.fields.iter().all(|f| f.ty.is_zst()),
+            Self::Enum(enum_ty) => enum_ty.is_zst(),
             Self::I1
             | Self::I8
             | Self::U8
@@ -360,6 +365,7 @@ impl PrettyPrint for Type {
             Self::Felt => const_text("felt"),
             Self::Ptr(ptr_ty) => ptr_ty.render(),
             Self::Struct(struct_ty) => struct_ty.render(),
+            Self::Enum(enum_ty) => enum_ty.render(),
             Self::Array(array_ty) => array_ty.render(),
             Self::List(ty) => const_text("list<") + ty.render() + const_text(">"),
             Self::Function(ty) => ty.render(),

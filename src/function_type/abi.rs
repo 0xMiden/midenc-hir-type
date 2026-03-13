@@ -1,4 +1,5 @@
-use core::fmt;
+use alloc::string::{String, ToString};
+use core::{fmt, str::FromStr};
 
 /// Represents the calling convention of a function.
 ///
@@ -40,12 +41,12 @@ pub enum CallConv {
     /// switching is required, and the arguments and results can be passed on the operand stack
     /// without the potential for overflow.
     Fast,
-    /// The C calling convention, as specified for System V (x86), adapted to Miden's ABI.
+    /// The C calling convention, as specified for WebAssembly, adapted to Miden's ABI.
     ///
     /// The purpose of this convention is to support cross-language interop via a foreign function
     /// interface (FFI) based on the C data layout rules. It is specifically designed for interop
     /// occurring _within_ the same context. For cross-language, cross-context interop, we require
-    /// the use of the Wasm Component Model, see the `CanonLift` convention for more.
+    /// the use of the Wasm Component Model, see the `ComponentModel` convention for more.
     ///
     /// Notable properties of this convention:
     ///
@@ -70,30 +71,44 @@ pub enum CallConv {
     ///   while the first argument of the argument list to be spilled starts at `sp` (the value
     ///   of the stack pointer on entry).
     ///
-    /// NOTE: This convention is non-optimal if not being used for cross-language interop.
+    /// NOTE: This convention may be non-optimal if not being used for cross-language interop.
     ///
     #[default]
-    SystemV,
-    /// This convention is used to represent functions translated from WebAssembly.
+    C,
+    /// This convention is used to represent function signatures in WebAssembly.
+    ///
+    /// WebAssembly has only the following types relevant for us:
+    ///
+    /// * `i32`
+    /// * `i64`
+    /// * `f32` (used to represent field elements here)
+    /// * `f64` (not supported here)
+    /// * Reference types (i.e. handles that act like pointers)
     ///
     /// It has the following properties:
     ///
     /// * It is always executed in the caller's context
     /// * May only be the target of a `exec` or `dynexec` instruction
     /// * Only supports IR types which correspond to a valid WebAssembly type. Notably this does
-    ///   not include aggregates (except via reference types, which are not currently supported).
+    ///   not include aggregates (except via reference types).
     /// * Floating-point types are not allowed, except `f32` which is used to represent field
     ///   elements in the WebAssembly type system.
     /// * Callees must preserve the state of the operand stack following the function arguments
-    /// * Uses the same argument spilling strategy as the `SystemV` convention
+    /// * Uses the same argument spilling strategy as the `C` convention
     Wasm,
-    /// This convention represents one of the host-defined primitives of the Wasm Component Model.
+    /// This convention corresponds to the Canonical ABI of the Wasm Component Model.
     ///
-    /// In particular, this convention corresponds to functions synthesized via a `(canon lift)`
-    /// declaration, which is used to export a core Wasm function with a Canonical ABI signature.
-    /// These synthesized functions are responsible for "lowering" arguments out of the Canonical
-    /// ABI into a `Wasm`-compatible representation, and "lifting" results back into the Canonical
-    /// ABI.
+    /// This convention must be used for all exports of a component, in order for those exports to
+    /// be callable from other components and across Miden contexts.
+    ///
+    /// NOTE: This calling convention corresponds specifically to the functions synthesized from a
+    /// `(canon lift)` declaration in a Wasm component, which acts as a wrapper for some internal
+    /// function with another calling convention (i.e. `Wasm`) "lifting" it into the Canonical ABI.
+    /// Specifically, lifting here refers to the act of "lowering" the function arguments out of the
+    /// Canonical ABI and into the underlying convention of the wrapped function, and "lifting" the
+    /// results from the underlying convention into the Canonical ABI. While exports might have been
+    /// synthesized by a compiler, the details of this ABI can also be implemented by hand for
+    /// procedures written in Miden Assembly.
     ///
     /// NOTE: Some important details of this calling convention are described by the Canonical ABI
     /// spec covering the `canon lift` primitive, as well as how types are lifted/lowered from/to
@@ -101,17 +116,16 @@ pub enum CallConv {
     /// [this document](https://github.com/WebAssembly/component-model/blob/main/design/mvp/CanonicalABI.md#lifting-and-lowering-values)
     /// for those details, and other useful information about the Canonical ABI.
     ///
-    /// It has the following properties:
+    /// This convention has the following properties:
     ///
     /// * It is always executed in a new context
     /// * May only be the target of a `call` or `dyncall` instruction
-    /// * May only be called from a `CanonLower` function
     /// * Only supports IR types which correspond to a valid Canonical ABI type. Notably this does
     ///   not include pointer types. No support for `resource` types exists at this time due to
     ///   limitations of the Miden VM.
     /// * Callers must ensure that sensitive data is removed from the first 16 elements of the
-    ///   operand stack when lowering calls to `CanonLift` functions. This compiler will zero-pad
-    ///   the unused portions of the operand stack where applicable.
+    ///   operand stack when lowering calls to `ComponentModel` functions. This compiler will zero-
+    ///   pad the unused portions of the operand stack where applicable.
     /// * If the function arguments require more than 16 elements of the operand stack to represent,
     ///   then arguments will be spilled to the advice provider, as a block of memory (in words)
     ///   sufficiently large to hold all of the spilled arguments. The block will be hashed and
@@ -122,59 +136,50 @@ pub enum CallConv {
     ///   of its prologue, immediately fetch the spilled arguments from the advice map using the
     ///   provided digest on top of the operand stack, and write them into the current stack frame.
     ///   The spilled arguments can then be accessed by computing the offset from the stack pointer
-    ///   to the desired argument. Note that, like the spill strategy for `SystemV`, the spilled
+    ///   to the desired argument. Note that, like the spill strategy for `C`, the spilled
     ///   arguments will be written into memory in reverse order (the closer to the front of the
     ///   argument list, the smaller the offset).
-    ///
-    /// Unlike `CanonLower`, the details of this calling convention are stable, as it is designed
-    /// expressly for cross-language, cross-context interop, and is in fact the only supported
-    /// way to represent cross-context function calls at this time.
-    CanonLift,
-    /// This convention represents one of the host-defined primitives of the Wasm Component Model.
-    ///
-    /// In particular, this convention corresponds to functions synthesized via a `(canon lower)`
-    /// declaration, which is used to import a Canonical ABI function into a core Wasm module,
-    /// by providing a `Wasm`-compatible adapter for the underlying Canonical ABI function. These
-    /// synthesized functions are responsible for "lifting" the core Wasm arguments into the
-    /// Canonical ABI representation, and "lowering" the results out of that representation.
-    ///
-    /// This convention is identical to `Wasm`, with the following additional properties:
-    ///
-    /// * It is the only convention which may contain calls to a `CanonLift` function
-    /// * Functions using this convention are not allowed to have `Public` visibility
-    /// * Functions using this convention are considered to be compiler-generated, and thus are
-    ///   aggressively inlined/eliminated where possible.
-    ///
-    /// This should be considered an unstable, compiler-internal calling convention, and the details
-    /// of this convention can change at any time. Currently, it is only used by the Wasm frontend
-    /// to distinguish functions synthesized from a `(canon lower)`.
-    CanonLower,
-    /// This convention is like `Fast`, but indicates that the function implements a syscall as
-    /// part of a kernel module definition.
-    ///
-    /// Additional properties include:
-    ///
-    /// * It is always executed in the _root_ context, and therefore a context switch is
-    ///   involved.
-    /// * This convention may only be called via the `syscall` instruction, and may not be
-    ///   called from another `Kernel` function.
-    /// * This convention is only permitted on function _definitions_ when emitting a kernel library
-    /// * In addition to the type restrictions described by the `Fast` convention, it additionally
-    ///   forbids any arguments/results of pointer type, due to the context switch that occurs.
-    Kernel,
+    ComponentModel,
 }
 
 impl CallConv {
-    /// Returns true if this convention corresponds to one of the two Canonical ABI conventions
+    /// Returns true if this convention corresponds to the Canonical ABI convention
     pub fn is_wasm_canonical_abi(&self) -> bool {
-        matches!(self, Self::CanonLift | Self::CanonLower)
+        matches!(self, Self::ComponentModel)
+    }
+
+    /// Get the string representation of this calling convention
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Fast => "fast",
+            Self::C => "C",
+            Self::Wasm => "wasm",
+            Self::ComponentModel => "component-model",
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("unknown calling convention '{0}'")]
+pub struct UnknownCallingConventionError(String);
+
+impl FromStr for CallConv {
+    type Err = UnknownCallingConventionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "fast" => Ok(Self::Fast),
+            "C" => Ok(Self::C),
+            "wasm" | "Wasm" => Ok(Self::Wasm),
+            "canon-lift" | "component-model" => Ok(Self::ComponentModel),
+            other => Err(UnknownCallingConventionError(other.to_string())),
+        }
     }
 }
 
 impl fmt::Display for CallConv {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use miden_formatting::prettier::PrettyPrint;
-        self.pretty_print(f)
+        f.write_str(self.as_str())
     }
 }
 
@@ -182,13 +187,6 @@ impl miden_formatting::prettier::PrettyPrint for CallConv {
     fn render(&self) -> miden_formatting::prettier::Document {
         use miden_formatting::prettier::const_text;
 
-        match self {
-            Self::Fast => const_text("fast"),
-            Self::SystemV => const_text("C"),
-            Self::Wasm => const_text("wasm"),
-            Self::CanonLift => const_text("canon-lift"),
-            Self::CanonLower => const_text("canon-lower"),
-            Self::Kernel => const_text("kernel"),
-        }
+        const_text(self.as_str())
     }
 }

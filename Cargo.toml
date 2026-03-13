@@ -2,7 +2,7 @@
 name = "midenc-hir-type"
 description = "Type system and utilities for Miden HIR"
 version = "0.4.3"
-rust-version = "1.88"
+rust-version = "1.90"
 authors = ["Miden contributors"]
 repository = "https://github.com/0xMiden/midenc-hir-type"
 homepage = "https://github.com/0xMiden/midenc-hir-type"
@@ -11,7 +11,7 @@ categories = ["compilers"]
 keywords = ["compiler", "miden"]
 license = "MIT"
 readme = "README.md"
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["serde"]

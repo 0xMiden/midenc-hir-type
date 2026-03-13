@@ -1,7 +1,7 @@
 use alloc::{alloc::Layout, collections::VecDeque};
 use core::cmp::{self, Ordering};
 
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::*;
 
@@ -73,7 +73,8 @@ impl Type {
             | Self::Ptr(_)
             | Self::I16
             | Self::U16
-            | Self::Function(_)) => {
+            | Self::Function(_)
+            | Self::Enum(_)) => {
                 let len = ty.size_in_bytes();
                 let remaining = len - n;
                 match (n, remaining) {
@@ -178,11 +179,13 @@ impl Type {
                     let original_size = struct_ty.size;
                     let mut fields = VecDeque::from_iter(struct_ty.fields.iter().cloned());
                     let mut split = StructType {
+                        name: None,
                         repr: original_repr,
                         size: 0,
                         fields: smallvec![],
                     };
                     let mut remaining = StructType {
+                        name: None,
                         repr: TypeRepr::packed(1),
                         size: 0,
                         fields: smallvec![],
@@ -202,6 +205,7 @@ impl Type {
                             // Handle the edge case where padding is at the front of the struct
                             if split.fields.is_empty() {
                                 split.fields.push(StructField {
+                                    name: None,
                                     index: 0,
                                     align: 1,
                                     offset: 0,
@@ -239,6 +243,7 @@ impl Type {
                             // Handle the edge case where padding is at the front of the struct
                             if split.fields.is_empty() {
                                 split.fields.push(StructField {
+                                    name: None,
                                     index: 0,
                                     align: 1,
                                     offset: 0,
@@ -332,6 +337,7 @@ impl Type {
                             // The second half of the split will always be a type
                             let partial2 = partial2.unwrap();
                             split.fields.push(StructField {
+                                name: None,
                                 index,
                                 offset,
                                 align,
@@ -344,6 +350,7 @@ impl Type {
                             remaining.size = original_size - split.size;
                             remaining.fields.reserve(1 + fields.len());
                             remaining.fields.push(StructField {
+                                name: None,
                                 index: 0,
                                 offset: 1,
                                 align: 1,
@@ -412,11 +419,13 @@ impl Type {
             // 8-bit integers and booleans can be naturally aligned
             Self::I8 | Self::U8 | Self::I1 => 1,
             // Structs use the minimum alignment of their first field, or 1 if a zero-sized type
-            Self::Struct(ref struct_ty) => struct_ty.min_alignment(),
+            Self::Struct(struct_ty) => struct_ty.min_alignment(),
+            // Enums use the minimum alignment of their largest variant, or 1 if a zero-sized type
+            Self::Enum(enum_ty) => enum_ty.min_alignment(),
             // Arrays use the minimum alignment of their element type
-            Self::Array(ref array_ty) => array_ty.min_alignment(),
+            Self::Array(array_ty) => array_ty.min_alignment(),
             // Lists use the minimum alignment of their element type
-            Self::List(ref element_ty) => element_ty.min_alignment(),
+            Self::List(element_ty) => element_ty.min_alignment(),
         }
     }
 
@@ -442,8 +451,9 @@ impl Type {
             // Raw pointers  are 32-bits, the same size as the native integer width, u32
             Self::Ptr(_) | Self::Function(_) => 32,
             // Packed structs have no alignment padding between fields
-            Self::Struct(ref struct_ty) => struct_ty.size as usize * 8,
-            Self::Array(ref array_ty) => array_ty.size_in_bits(),
+            Self::Struct(struct_ty) => struct_ty.size as usize * 8,
+            Self::Enum(enum_ty) => enum_ty.size_in_bits(),
+            Self::Array(array_ty) => array_ty.size_in_bits(),
             Type::List(_) => todo!(
                 "invalid type: list has no defined representation yet, so its size cannot be \
                  determined"
@@ -534,6 +544,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(0),
             &StructField {
+                name: None,
                 index: 0,
                 align: 4,
                 offset: 0,
@@ -543,6 +554,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(1),
             &StructField {
+                name: None,
                 index: 1,
                 align: 1,
                 offset: 4,
@@ -552,6 +564,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(2),
             &StructField {
+                name: None,
                 index: 2,
                 align: 4,
                 offset: 8,
@@ -567,6 +580,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(0),
             &StructField {
+                name: None,
                 index: 0,
                 align: 1,
                 offset: 0,
@@ -576,6 +590,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(1),
             &StructField {
+                name: None,
                 index: 1,
                 align: 1,
                 offset: 4,
@@ -585,6 +600,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(2),
             &StructField {
+                name: None,
                 index: 2,
                 align: 1,
                 offset: 5,
@@ -600,6 +616,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(0),
             &StructField {
+                name: None,
                 index: 0,
                 align: 4,
                 offset: 0,
@@ -609,6 +626,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(1),
             &StructField {
+                name: None,
                 index: 1,
                 align: 1,
                 offset: 4,
@@ -618,6 +636,7 @@ mod tests {
         assert_eq!(
             struct_ty.get(2),
             &StructField {
+                name: None,
                 index: 2,
                 align: 4,
                 offset: 8,

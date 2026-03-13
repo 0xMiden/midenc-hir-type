@@ -12,6 +12,9 @@ on:
       - "**.md"
       - "**.txt"
 
+permissions:
+  contents: read
+
 env:
   # Set the new value when the cache grows too much and we hit the runner's disk space limit
   # via https://github.com/rust-lang/docs.rs/pull/2433

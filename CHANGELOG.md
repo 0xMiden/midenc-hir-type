@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.0...v0.5.1) - 2026-03-13
+
+### Other
+
+- fix format-rust task not using nightly
+- bump rust toolchain to 1.92
+- set permissions for ci workflow
+
 ## [0.4.3](https://github.com/0xMiden/compiler/compare/midenc-hir-type-v0.4.2...midenc-hir-type-v0.4.3) - 2025-11-05
 
 ### Other

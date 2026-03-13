@@ -1,12 +1,11 @@
 use core::{fmt, iter::FusedIterator};
 
 use miden_formatting::prettier::PrettyPrint;
-
-use crate::*;
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
+
+use crate::*;
 
 /// The error type returned when attempting to construct an invalid [EnumType]
 #[derive(Debug, thiserror::Error)]
@@ -14,7 +13,8 @@ pub enum InvalidEnumTypeError {
     #[error("invalid discriminant type '{0}': expected integer type")]
     InvalidDiscriminantType(Type),
     #[error(
-        "invalid enum variant '{variant}': discriminant value is out of range for {discriminant_ty}, preceding variant had value {value_of_preceding_variant}"
+        "invalid enum variant '{variant}': discriminant value is out of range for \
+         {discriminant_ty}, preceding variant had value {value_of_preceding_variant}"
     )]
     InvalidImplicitDiscriminantValue {
         variant: Arc<str>,
@@ -22,7 +22,8 @@ pub enum InvalidEnumTypeError {
         value_of_preceding_variant: u128,
     },
     #[error(
-        "invalid enum variant '{variant}': discriminant value {value} is out of range for {discriminant_ty}"
+        "invalid enum variant '{variant}': discriminant value {value} is out of range for \
+         {discriminant_ty}"
     )]
     InvalidDiscriminantValue {
         variant: Arc<str>,
@@ -32,7 +33,8 @@ pub enum InvalidEnumTypeError {
     #[error("invalid enum variant: '{variant}' cannot be defined twice in the same enum")]
     DuplicateVariant { variant: Arc<str> },
     #[error(
-        "invalid enum variant '{variant}': discriminant value has already been claimed by a previous discriminant"
+        "invalid enum variant '{variant}': discriminant value has already been claimed by a \
+         previous discriminant"
     )]
     DuplicateDiscriminantValue { variant: Arc<str>, value: u128 },
 }

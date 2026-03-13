@@ -1,6 +1,6 @@
+use alloc::sync::Arc;
 use core::{fmt, num::NonZeroU16};
 
-use alloc::sync::Arc;
 use smallvec::SmallVec;
 
 use super::{Alignable, Type};

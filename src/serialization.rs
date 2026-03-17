@@ -215,7 +215,7 @@ impl Type {
         use core::num::NonZeroU16;
 
         let tag = source.read_u8()?;
-        let is_recursive = matches!(tag, 16..=20);
+        let is_recursive = matches!(tag, 16..=21);
         if is_recursive && depth == 0 {
             return Err(DeserializationError::InvalidValue(String::from(
                 "type nesting exceeds limit",
@@ -366,7 +366,7 @@ impl Deserializable for Type {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
+    use alloc::{format, vec::Vec};
 
     use miden_serde_utils::{BudgetedReader, ByteWriter, SliceReader};
 
@@ -469,5 +469,41 @@ mod tests {
 
         let ty = Type::read_from(&mut SliceReader::new(&bytes)).unwrap();
         assert!(matches!(ty, Type::Function(_)));
+    }
+
+    fn write_str(buf: &mut Vec<u8>, s: &str) {
+        buf.write_usize(s.len());
+        buf.write_bytes(s.as_bytes());
+    }
+
+    fn nested_enum_bytes(depth: usize) -> Vec<u8> {
+        let mut inner = Vec::new();
+        inner.write_u8(15);
+
+        for i in 0..depth {
+            let mut bytes = Vec::new();
+            bytes.write_u8(21);
+            write_str(&mut bytes, &format!("E{i}"));
+            bytes.write_u8(4);
+            bytes.write_usize(1);
+            write_str(&mut bytes, &format!("V{i}"));
+            bytes.write_bool(true);
+            bytes.write_bytes(&inner);
+            bytes.write_bool(false);
+            inner = bytes;
+        }
+
+        inner
+    }
+
+    #[test]
+    fn enum_type_rejects_nested_over_limit() {
+        let bytes = nested_enum_bytes(MAX_TYPE_NESTING + 50);
+
+        let err = Type::read_from(&mut SliceReader::new(&bytes)).unwrap_err();
+        let DeserializationError::InvalidValue(message) = err else {
+            panic!("expected InvalidValue error");
+        };
+        assert!(message.contains("type nesting exceeds limit"));
     }
 }

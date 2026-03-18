@@ -47,7 +47,7 @@ jobs:
         name: Install cargo-make
         run: |
           if ! cargo make --version 2>/dev/null; then
-            cargo install cargo-make --force
+            cargo install --locked cargo-make --force
           fi
       - name: Clippy
         run: |

@@ -91,6 +91,11 @@ jobs:
           prefix-key: ${{ env.RUST_CACHE_KEY }}
           save-if: ${{ github.ref == 'refs/heads/next' }}
       - *install-cargo-make
+      - name: Install cargo-nextest
+        run: |
+          if ! cargo nextest --version 2>/dev/null; then
+            cargo install --locked cargo-nextest
+          fi
       - name: Check
         # We run `cargo check` to verify that the workspace compiles correctly before attempting
         # to execute the tests. This produces easier to read output if a compilation error occurs

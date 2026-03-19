@@ -9,6 +9,8 @@ mod enum_type;
 mod function_type;
 mod layout;
 mod pointer_type;
+#[cfg(feature = "serde")]
+mod serialization;
 mod struct_type;
 
 use alloc::{boxed::Box, sync::Arc};

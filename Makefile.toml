@@ -132,8 +132,8 @@ dependencies = ["install-rustfmt"]
 [tasks.format-rust]
 category = "Development"
 description = "Formats source code (Rust)"
-command = "cargo"
-args = ["fmt"]
+command = "rustup"
+args = ["run", "nightly", "cargo", "fmt"]
 dependencies = ["install-rustfmt"]
 
 [tasks.install-rustfmt]

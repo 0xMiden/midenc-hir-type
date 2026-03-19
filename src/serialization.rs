@@ -278,6 +278,7 @@ impl Type {
                         TypeRepr::Packed(align)
                     }
                     3 => TypeRepr::Transparent,
+                    4 => TypeRepr::BigEndian,
                     invalid => {
                         return Err(DeserializationError::InvalidValue(format!(
                             "invalid TypeRepr tag: {invalid}"
@@ -366,6 +367,7 @@ impl Deserializable for Type {
 #[cfg(test)]
 mod tests {
     use alloc::vec::Vec;
+
     use miden_serde_utils::{BudgetedReader, ByteWriter, SliceReader};
 
     use super::*;

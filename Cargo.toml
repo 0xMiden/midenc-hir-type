@@ -1,7 +1,7 @@
 [package]
 name = "midenc-hir-type"
 description = "Type system and utilities for Miden HIR"
-version = "0.5.2"
+version = "0.5.3"
 rust-version = "1.90"
 authors = ["Miden contributors"]
 repository = "https://github.com/0xMiden/midenc-hir-type"

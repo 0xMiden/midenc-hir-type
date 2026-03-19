@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.2...v0.5.3) - 2026-03-19
+
+### Fixed
+
+- enforce depth limit for nested enum type deserialization
+- *(serde)* add missing deserialization path for TypeRepr::BigEndian
+
+### Other
+
+- ensure --locked is used when installing cargo-make
+- install cargo-nextest with --locked in CI
+- release v0.5.2
+
 ## [0.5.2](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.1...v0.5.2) - 2026-03-16
 
 ### Added

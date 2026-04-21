@@ -43,9 +43,9 @@ dependencies = [
 
 [[package]]
 name = "miden-serde-utils"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff78082e9b4ca89863e68da01b35f8a4029ee6fd912e39fa41fde4273a7debab"
+checksum = "94c2ae629849e1e6d851fa6ba85f9fb9715a10d6b9a8bed29a5a5403164c7595"
 dependencies = [
  "p3-field",
  "p3-goldilocks",

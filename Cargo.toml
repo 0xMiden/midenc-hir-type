@@ -20,7 +20,7 @@ std = ["miden-serde-utils/std"]
 
 [dependencies]
 miden-formatting = { version = "0.1", default-features = false }
-miden-serde-utils = { version = "0.24", optional = true, default-features = false }
+miden-serde-utils = { version = "0.25", optional = true, default-features = false }
 smallvec = { version = "1.14", default-features = false, features = [
     "union",
     "const_generics",

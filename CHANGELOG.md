@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/0xMiden/midenc-hir-type/compare/v0.6.0...v0.7.0) - TBD
+
+### Changed
+
+- Prepare a major release by updating the Miden crypto serialization dependency to `miden-serde-utils` 0.26.0.
+
 ## [0.5.4](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.3...v0.5.4) - 2026-04-21
 
 ### Other

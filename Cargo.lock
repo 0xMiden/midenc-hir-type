@@ -43,9 +43,9 @@ dependencies = [
 
 [[package]]
 name = "miden-serde-utils"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d899afcfbf85c851522f2dff73db1064116486fb8e0ebce0ade44ce72dadc075"
+checksum = "51113512f5aa37f136ed1e2f63981ecb5edb52f8972c2cfd3891cf8137308db8"
 dependencies = [
  "p3-field",
  "p3-goldilocks",
@@ -53,7 +53,7 @@ dependencies = [
 
 [[package]]
 name = "midenc-hir-type"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "miden-formatting",
  "miden-serde-utils",

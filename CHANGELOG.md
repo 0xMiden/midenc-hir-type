@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/0xMiden/midenc-hir-type/compare/v0.6.0...v0.6.1) - 2026-05-04
+
+### Other
+
+- Update miden-serde-utils to 0.25.0
+
+## [0.6.0](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.3...v0.6.0) - 2026-04-22
+
+### Fixed
+
+- update Cargo.lock for release
+
+### Other
+
+- 0.6.0
+- release v0.5.4
+- Changelog
+- update miden serde utils to 0.24
+
 ## [0.5.4](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.3...v0.5.4) - 2026-04-21
 
 ### Other

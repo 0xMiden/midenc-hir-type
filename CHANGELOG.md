@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/0xMiden/midenc-hir-type/compare/v0.6.1...v0.7.0) - 2026-06-03
+
+### Other
+
+- Scope miden-serde-utils update to dependency only
+
 ## [0.6.1](https://github.com/0xMiden/midenc-hir-type/compare/v0.6.0...v0.6.1) - 2026-05-04
 
 ### Other
@@ -20,17 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 
-- 0.6.0
-- release v0.5.4
-- Changelog
 - update miden serde utils to 0.24
 
 ## [0.5.4](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.3...v0.5.4) - 2026-04-21
-
-### Other
-
-- Changelog
-- update miden serde utils to 0.24
 
 ### Changed
 
@@ -47,17 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ensure --locked is used when installing cargo-make
 - install cargo-nextest with --locked in CI
-- release v0.5.2
 
 ## [0.5.2](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.1...v0.5.2) - 2026-03-16
 
 ### Added
 
 - implement miden-serde-utils serialization for types
-
-### Other
-
-- 0.5.1
 
 ## [0.5.1](https://github.com/0xMiden/midenc-hir-type/compare/v0.5.0...v0.5.1) - 2026-03-13
 
